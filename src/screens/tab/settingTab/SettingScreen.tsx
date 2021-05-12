@@ -2,7 +2,7 @@ import styled from '@emotion/native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import React, { useEffect, useState } from "react";
-import { BackHandler, Platform, SafeAreaView } from 'react-native';
+import { BackHandler, Platform, SafeAreaView, Alert, Modal, StyleSheet, Text, Pressable, View, Image } from 'react-native';
 import { EmailSend } from '../../../components/chat-room/EmailSend';
 import { RightIcon } from '../../../components/icon/RightIcon';
 import { BlankBackground } from '../../../components/layout/BlankBackground';
@@ -18,16 +18,41 @@ import {
   getAvailablePurchases,
   requestSubscription,
 } from "../premiumTab/RNIapFunction";
+import { TouchableOpacity } from 'react-native-gesture-handler';
 
 type SettingScreenNavigationProp = StackNavigationProp<SettingStackParamList, 'SettingScreen'>;
 
 type Props = {
   navigation: SettingScreenNavigationProp;
 };
+
+
 export const SettingScreen: React.FC<Props> = () => {
   const { setLoggedOut } = useAuthContext();
   const { setNavName } = useAuthContext();
   const [ispremium, setIspremium] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+
+
+const GetProfileIconList: React.FC<{iconPath?: string}> = ({ iconPath }) => {
+  return(
+    <Pressable
+    style={{
+      height: 70, width: 70,
+    }}
+    onPress={() => {
+      setModalVisible(!modalVisible);
+    }}
+    >
+    <Image
+      style={{
+        height: 70, width: 70, position: 'absolute',
+      }}
+      source={{uri: "https://s3.ap-northeast-2.amazonaws.com/api.campustaxi.net/profile_icon/"+iconPath+".png"}}
+    />
+  </Pressable>
+  );
+}
 
   //프로필 화면을 위해 데이터를 요청
   const { token, resetToken, refresh } = useAuthContext();
@@ -76,13 +101,47 @@ export const SettingScreen: React.FC<Props> = () => {
       return true;
     }
   }
+
+  
   //#endregion 뒤로가기 버튼 제어 & 더블클릭시 앱 종료
   return (
     <BlankBackground color="#fff">
       <SafeAreaView>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => {
+          Alert.alert("Modal has been closed.");
+          setModalVisible(!modalVisible);
+        }}
+      >
+        <View style={styles.centeredView}>
+          <View style={styles.modalView}>
+            <View style={{width: 200, flexDirection: 'row'}}>
+              <GetProfileIconList iconPath="profile_icon0"/>
+              <GetProfileIconList iconPath="profile_icon1"/>
+              <GetProfileIconList iconPath="profile_icon2"/>
+            </View>
+            <View style={{width: 200, flexDirection: 'row'}}>
+              <GetProfileIconList iconPath="profile_icon3"/>
+              <GetProfileIconList iconPath="profile_icon4"/>
+              <GetProfileIconList iconPath="profile_icon5"/>
+            </View>
+            <Pressable
+              style={[styles.button, styles.buttonClose]}
+              onPress={() => setModalVisible(!modalVisible)}
+            >
+              <Text style={styles.textStyle}>확인</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
         <Container>
           <ProfileContainer>
-            <ProfileImage source={{uri: 'https://reactnative.dev/img/tiny_logo.png'}}></ProfileImage>
+            <ProfileImage source={{uri: 'https://s3.ap-northeast-2.amazonaws.com/api.campustaxi.net/profile_icon/profile_icon0.png'}}/>
+            <PlusButton
+              onPress={() => setModalVisible(true)}/>
             <ProfileTextContainer>
               <NicknameText>{user?.nickname}</NicknameText>
               <CampusNameText>{user?.campus_name}</CampusNameText>
@@ -174,6 +233,52 @@ export const SettingScreen: React.FC<Props> = () => {
     </BlankBackground>
   );
 };
+
+const styles = StyleSheet.create({
+  centeredView: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 22
+  },
+  modalView: {
+    margin: 20,
+    backgroundColor: "white",
+    borderRadius: 20,
+    padding: 35,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2
+  },
+  buttonOpen: {
+    backgroundColor: "#F194FF",
+  },
+  buttonClose: {
+    backgroundColor: "#2196F3",
+  },
+  textStyle: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center"
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: "center"
+  }
+});
+
+
 const Container = styled.ScrollView`
   margin-left: 30px;
 `;
@@ -229,4 +334,12 @@ const MembershipGroupText = styled.Text`
 const ProfileImage = styled.Image`
   width: 70px;
   height: 70px;
+`;
+
+const PlusButton = styled.TouchableOpacity`
+  width: 15px;
+  height: 15px;
+  background-color: #000000;
+  border-color:#000000;
+  margin-top: 60px;
 `;
