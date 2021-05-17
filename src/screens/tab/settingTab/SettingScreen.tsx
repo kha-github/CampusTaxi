@@ -12,6 +12,9 @@ import { SettingStackParamList } from './SettingStackNavigation';
 import { CustomAxios } from "../../../components/axios/axios";
 import { API_URL } from "../../../constant";
 import { User } from "../../../contexts/User";
+import { PlusIcon } from "../../../components/icon/setting/PlusIcon"
+import axios from "axios";
+
 import { 
   PurchaseGoogle, 
   getSubscriptions,
@@ -34,29 +37,63 @@ export const SettingScreen: React.FC<Props> = () => {
   const [modalVisible, setModalVisible] = useState(false);
 
 
-const GetProfileIconList: React.FC<{iconPath?: string}> = ({ iconPath }) => {
-  return(
-    <Pressable
-    style={{
-      height: 70, width: 70,
-    }}
-    onPress={() => {
-      setModalVisible(!modalVisible);
-    }}
-    >
-    <Image
-      style={{
-        height: 70, width: 70, position: 'absolute',
-      }}
-      source={{uri: "https://s3.ap-northeast-2.amazonaws.com/api.campustaxi.net/profile_icon/"+iconPath+".png"}}
-    />
-  </Pressable>
-  );
-}
-
   //프로필 화면을 위해 데이터를 요청
   const { token, resetToken, refresh } = useAuthContext();
   const [user, setUser] = useState<User>();
+  const [myprofilepath, setMyprofilepath] = useState<string>("default");
+
+
+  const GetProfileIconList: React.FC<{iconPath?: string}> = ({ iconPath }) => {
+    return(
+      <Pressable
+      style={{
+        height: 70, width: 70,
+      }}
+      onPress={() => {
+        console.log(iconPath);
+        if(ispremium === true){
+          setMyprofilepath(iconPath);
+          setModalVisible(!modalVisible);
+        }
+      }}
+      >
+      <Image
+        style={{
+          height: 70, width: 70, position: 'absolute',
+        }}
+        source={{uri: "https://s3.ap-northeast-2.amazonaws.com/api.campustaxi.net/profile_icon/"+iconPath+".png"}}
+      />
+    </Pressable>
+    );
+  }
+
+  // const updateProfileIcon: React.FC<{iconPath?: string}> = ({ iconPath }) => {
+  //   CustomAxios(
+  //     "GET",
+  //     `http://127.0.0.1/accounts/me/`,
+  //     resetToken,
+  //     refresh,
+  //     token,
+  //     undefined, //"User API",
+  //     undefined,
+  //     (d: User) => setUser(d)
+  //   );
+  // }
+
+  const GetMyProfile = async ()=>{
+    axios.get(
+    `http://localhost:3003`
+    )
+    .then((dbProfilepath) => {
+      //setMyprofilepath(dbProfilepath.data);
+      console.log('result create room:',dbProfilepath.data);
+    })
+    .catch(error => {
+      console.log(error)
+    })
+  };
+
+
   useEffect(() => {
     CustomAxios(
       "GET",
@@ -68,6 +105,9 @@ const GetProfileIconList: React.FC<{iconPath?: string}> = ({ iconPath }) => {
       undefined,
       (d: User) => setUser(d)
     );
+
+    GetMyProfile();
+
   }, []);
 
   useFocusEffect(() => {
@@ -112,7 +152,6 @@ const GetProfileIconList: React.FC<{iconPath?: string}> = ({ iconPath }) => {
         transparent={true}
         visible={modalVisible}
         onRequestClose={() => {
-          Alert.alert("Modal has been closed.");
           setModalVisible(!modalVisible);
         }}
       >
@@ -128,6 +167,19 @@ const GetProfileIconList: React.FC<{iconPath?: string}> = ({ iconPath }) => {
               <GetProfileIconList iconPath="profile_icon4"/>
               <GetProfileIconList iconPath="profile_icon5"/>
             </View>
+            <View style={{width: 200, flexDirection: 'row'}}>
+              <Pressable
+              style={{
+                height: 70, width: 70,
+              }}
+              onPress={() => {
+                setMyprofilepath("default");
+                setModalVisible(!modalVisible);
+              }}
+              >
+                <Image style = {{ width: 70, height: 70}} source={require('../../../components/icon/setting/defaultIcon.png')}/>
+              </Pressable>
+            </View>
             <Pressable
               style={[styles.button, styles.buttonClose]}
               onPress={() => setModalVisible(!modalVisible)}
@@ -139,14 +191,20 @@ const GetProfileIconList: React.FC<{iconPath?: string}> = ({ iconPath }) => {
       </Modal>
         <Container>
           <ProfileContainer>
-            <ProfileImage source={{uri: 'https://s3.ap-northeast-2.amazonaws.com/api.campustaxi.net/profile_icon/profile_icon0.png'}}/>
+            {ispremium===true && myprofilepath!=="default" ? 
+            <ProfileImage source={{uri: 'https://s3.ap-northeast-2.amazonaws.com/api.campustaxi.net/profile_icon/'+myprofilepath+'.png'}}/>
+            :
+            <Image style = {{ width: 70, height: 70}} source={require('../../../components/icon/setting/defaultIcon.png')}/>
+            }
             <PlusButton
-              onPress={() => setModalVisible(true)}/>
+              onPress={() => setModalVisible(true)}>
+                <PlusIcon/>
+            </PlusButton>
             <ProfileTextContainer>
               <NicknameText>{user?.nickname}</NicknameText>
               <CampusNameText>{user?.campus_name}</CampusNameText>
-              <EmailText>{user?.email}</EmailText>
-              <MembershipGroupText style={{color: ispremium == true ? "#76A2EB" : "#000000"}}>
+              <EmailTextBackView><EmailText>{user?.email}</EmailText></EmailTextBackView>
+              <MembershipGroupText style={{color: ispremium == true ? "#00567C" : "#000000"}}>
                 {ispremium == true ? "프리미엄 회원" : "일반 회원"}
                 </MembershipGroupText>
             </ProfileTextContainer>
@@ -313,16 +371,30 @@ const ProfileTextContainer = styled.View`
   margin-left: 20px;
   flex: 1;
 `;
+
+const EmailTextBackView = styled.View`
+  height: 15px;
+  justify-content: center;
+  align-self: baseline;
+  padding: 0 5px 0 5px;
+  align-items: center;
+  border-radius: 10px;
+  background-color: #E8E9F2;
+  margin-bottom: 15px;
+`;
+
 const NicknameText = styled.Text`
   font-size: 15px;
   font-weight: bold;
 `;
 
 const CampusNameText = styled.Text`
-  font-size: 13px;
+  color: #828282;
+  font-size: 11px;
 `;
 
 const EmailText = styled.Text`
+  color: #828282;
   font-size: 11px;
 `;
 
@@ -339,7 +411,5 @@ const ProfileImage = styled.Image`
 const PlusButton = styled.TouchableOpacity`
   width: 15px;
   height: 15px;
-  background-color: #000000;
-  border-color:#000000;
   margin-top: 60px;
 `;
