@@ -17,6 +17,7 @@ import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { showToast } from "../../../components/layout/Toast";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { PremiumStackParamList } from "./PremiumStackNavigation";
+import { PlusIcon } from "../../../components/icon/setting/PlusIcon";
 import { 
   PurchaseGoogle, 
   getSubscriptions,

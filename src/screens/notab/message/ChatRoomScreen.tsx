@@ -54,6 +54,7 @@ export type searchProps = {
 export const ChatRoomScreen: React.FC = () => {
   const { navigate } = useNavigation<MessageNoTabNavigationProp>();
   const [messages, setMessages] = useState<Message[]>([]); //MessageDummy
+
   const [searchResult, setSearchResult] = useState<searchProps>();
   const [message, setMessage] = useState("");
   const [room, setRoom] = useState<ChatRoom>(
@@ -73,6 +74,9 @@ export const ChatRoomScreen: React.FC = () => {
   const [user, setUser] = useState<User>();
   const [socket, setSocket] = useState<Socket>(io(socketURL));
   const { token, resetToken, refresh } = useAuthContext();
+  const { firebaseToken } = useAuthContext();
+
+  //#region 웹소켓
   useEffect(() => {
     //내 정보 가져오기
     CustomAxios(
@@ -86,17 +90,34 @@ export const ChatRoomScreen: React.FC = () => {
       (d: User) => {
         setUser(d);
         //#region 내방목록 가져오기
-        // console.log("== NEW ==")
-        // CustomAxios(
-        //   "GET",
-        //   `${API_URL}/v1/chat/2/`,
-        //   resetToken,
-        //   refresh,
-        //   token,
-        //   'undefined', // "User Room",
-        //   undefined,
-        //   (d: any) => console.log("MESSAGE !! : ", d)
-        // );
+        if (!!d) {
+          socket.emit("enter", {
+            room_id: room.id,
+            username: d.nickname,
+            firebaseToken: firebaseToken,
+          });
+          //이전 채팅 받아오기
+          socket.on("enter chat", (response) => {
+            setMessages(response.data);
+            //#region 채팅 받기
+            socket.on("chat", (chat) => {
+              let a: Array<Message> = response.data;
+              a.unshift({
+                id: a.length + 1,
+                message: chat.msg,
+                message_type: "NORMAL",
+                writer: chat.username,
+                room: room.id,
+                created_at: new Date(),
+                updated_at: new Date(),
+                index: a.length + 1,
+              });
+              setMessages(a);
+              ChatScrollRef.current?.forceUpdate();
+            });
+            //#endregion 채팅 받기
+          });
+        }
         //#endregion 내방목록 가져오기
       }
     );
@@ -109,39 +130,7 @@ export const ChatRoomScreen: React.FC = () => {
   //#endregion 유저 데이터 요청
   //#endregion 초기 세팅
 
-  //#region 웹소켓
-  const { firebaseToken } = useAuthContext();
-  useEffect(() => {
-    if (user) {
-      socket.emit("enter", {
-        room_id: room.id,
-        username: user?.nickname,
-        firebaseToken: firebaseToken,
-      });
-      //채팅 받기
-      socket.on("chat", (d) => {
-        let a: Array<Message> = messages;
-        a.unshift({
-          id: messages.length + 1,
-          message: d.msg,
-          message_type: "Message",
-          writer: d.username,
-          room: room.id,
-          created_at: new Date(),
-          updated_at: new Date(),
-          index: messages.length + 1,
-        });
-        setMessages(a);
-        ChatScrollRef.current?.forceUpdate();
-      });
-      //이전 채팅 받아오기
-      socket.on("enter chat",(d) => {
-        console.log(d)
-      })
-     
-    }
 
-  }, [user]);
   //#region 채팅 전송
   const sendMessage = (text: string) => {
     socket.emit("chat", {
@@ -310,7 +299,7 @@ export const ChatRoomScreen: React.FC = () => {
   //#region 뒤로가기 제어
   const LeftBtnOnPress = () => {
     setNavName({ istab: "Tab", tab: "MessageTabScreen" });
-    socket.disconnect(); 
+    socket.disconnect();
   };
   const ContentContainerStyle = {
     alignItems: "center",
@@ -387,8 +376,8 @@ export const ChatRoomScreen: React.FC = () => {
                   searchResult={searchResult}
                   message={props.item}
                   gender={1}
-                  isLeft={props.item.username == user?.nickname}
-                  isHost={props.item.username == room.owner}
+                  isLeft={props.item.writer != user?.nickname}
+                  isHost={props.item.writer == room.owner}
                 />
               )}
             ></ContentContainer>
