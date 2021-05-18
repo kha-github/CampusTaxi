@@ -68,6 +68,10 @@ export const SettingScreen: React.FC<Props> = () => {
   }
 
   useEffect(()=>{
+    GetMyProfile();
+  }, [ispremium]);
+
+  useEffect(()=>{
     UpdateMyProfile();
   }, [myprofilepath]);
 
