@@ -67,26 +67,35 @@ export const SettingScreen: React.FC<Props> = () => {
     );
   }
 
-  // const updateProfileIcon: React.FC<{iconPath?: string}> = ({ iconPath }) => {
-  //   CustomAxios(
-  //     "GET",
-  //     `http://127.0.0.1/accounts/me/`,
-  //     resetToken,
-  //     refresh,
-  //     token,
-  //     undefined, //"User API",
-  //     undefined,
-  //     (d: User) => setUser(d)
-  //   );
-  // }
+  useEffect(()=>{
+    UpdateMyProfile();
+  }, [myprofilepath]);
+
+  const UpdateMyProfile = async ()=>{
+    axios.post(
+    `http://192.168.219.142:3003/updateProfileIcon`,
+    {
+      "email" : user?.email,
+      "imagepath" : myprofilepath
+    }
+    )
+    .then((response) => {
+      
+    })
+    .catch(error => {
+      console.log(error)
+    })
+  };
 
   const GetMyProfile = async ()=>{
-    axios.get(
-    `http://localhost:3003`
+    axios.post(
+    `http://192.168.219.142:3003/getProfileIcon`,
+    {
+      "email" : user?.email
+    }
     )
     .then((dbProfilepath) => {
-      //setMyprofilepath(dbProfilepath.data);
-      console.log('result create room:',dbProfilepath.data);
+      setMyprofilepath(dbProfilepath.data[0].imagepath);
     })
     .catch(error => {
       console.log(error)
